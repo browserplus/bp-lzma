@@ -1,0 +1,16 @@
+how to build:
+
+ cd external/
+ ./build.rb
+ cd ../src
+ rm -rf build && mkdir build
+ cmake ..
+ make
+
+A dir LZMA should be generated which is your service ready to 
+be installed using the BrowserPlus SDK:
+
+http://browserplus.yahoo.com/developer/service/sdk/
+
+
+  
