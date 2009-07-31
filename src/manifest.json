@@ -1,0 +1,10 @@
+{
+  "type": "standalone",
+  "CoreletLibrary": "@ServiceLibrary@",
+  "strings": { 
+    "en": { 
+      "title": "LZMA Compression Engine", 
+      "summary": "Enables faster uploads by allowing webpages to efficiently compress files you select."
+    }
+  }
+}

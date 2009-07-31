@@ -1,0 +1,3 @@
+[submodule "external/bp-service-tools"]
+	path = external/bp-service-tools
+	url = git://github.com/lloyd/bp-service-tools.git
