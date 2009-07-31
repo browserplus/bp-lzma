@@ -1,0 +1,25 @@
+The BrowserPlus LZMA service.
+
+Overview
+
+LZMA (http://en.wikipedia.org/wiki/LZMA) is a compression algorithm with
+high compression rates (~55% the size of gzip and 65% the size of bzip in 
+one trial http://gist.github.com/59923), at the cost of increased runtime
+(7x slower than gzip, and almost 3x slower than bzip) and increased memory
+requirements at compression time.  Decompressing LZMA is comparable to bzip
+with slightly greater memory requirements.
+
+Given these tradeoffs, this authors claim is that LZMA is a wonderful choice
+for the web, especially for the uploading of user generated content.  
+
+Often, users have relatively fast machines with loads of memory, coupled
+swith a slow upstream connection.  Being able to use a little bit of extra
+time in compression can effectively save time during upload, resulting in 
+a faster/better user experience.
+
+What's Here
+
+The C++ implementation of a BrowserPlus service which exposes LZMA
+compression to the browser.  This project is essentially an integration
+of the easylzma project into BrowserPlus
+
