@@ -37,6 +37,8 @@
 
 cmake_minimum_required(VERSION 2.6)
 
+INCLUDE(BuildConfigs.cmake)
+
 SET (serviceName LZMA)
 
 PROJECT(${serviceName}Service)
