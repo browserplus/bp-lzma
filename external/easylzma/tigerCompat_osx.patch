@@ -1,11 +1,17 @@
---- easylzma-0.0.7/CMakeLists.txt.orig	2009-05-12 15:38:35.000000000 -0700
-+++ easylzma-0.0.7/CMakeLists.txt	2009-05-12 15:41:20.000000000 -0700
-@@ -44,9 +44,16 @@
+Only in easylzma.orig/.git: ORIG_HEAD
+Binary files easylzma.orig/.git/index and easylzma/.git/index differ
+diff -ur easylzma.orig/CMakeLists.txt easylzma/CMakeLists.txt
+--- easylzma.orig/CMakeLists.txt	2009-08-24 17:02:06.000000000 -0600
++++ easylzma/CMakeLists.txt	2009-08-24 17:00:10.000000000 -0600
+@@ -44,9 +44,19 @@
    SET(CMAKE_C_FLAGS_DEBUG "/D DEBUG /Od /Z7")
    SET(CMAKE_C_FLAGS_RELEASE "/D NDEBUG /O2")
  ELSE (WIN32)
 -  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -ansi")
-+  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -ansi -isysroot /Developer/SDKs/MacOSX10.4u.sdk -mmacosx-version-min=10.4  -arch i386")
++  SET(CMAKE_C_COMPILER gcc-4.0)
++  SET(CMAKE_CXX_COMPILER g++-4.0)
++
++  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -ansi -isysroot /Developer/SDKs/MacOSX10.4u.sdk -mmacosx-version-min=10.4 -arch i386")
    SET(CMAKE_C_FLAGS_DEBUG "-DDEBUG -g")
    SET(CMAKE_C_FLAGS_RELEASE "-DNDEBUG -O2")
 +  SET(linkFlags "-mmacosx-version-min=10.4 -isysroot /Developer/SDKs/MacOSX10.4u.sdk -syslibroot,/Developer/SDKs/MacOSX10.4.u.sdk -arch i386")

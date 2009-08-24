@@ -37,26 +37,6 @@ if CONFIG['arch'] =~ /mswin/
 elsif CONFIG['arch'] =~ /darwin/
     $platform = "Darwin"
 
-    # Compiler/linker flags needed for 10.4 compatibility.  The surrounding
-    # spaces are important, don't be tempted to remove them.
-    #
-    # 10.4 compatibility is painful, see 
-    # http://developer.apple.com/releasenotes/Darwin/SymbolVariantsRelNotes/index
-    # In general, we must get these flags to the compiler and linker to tell it
-    # what sdk to use.  In addition, source which defines any of the preprocessor
-    # symbols mentioned in the above article will be problematic.
-    #
-    $darwinCompatCompileFlags = " -isysroot /Developer/SDKs/MacOSX10.4u.sdk -arch i386 "
-    $darwinCompatCompileFlags += " -mmacosx-version-min=10.4 "
-    $darwinCompatLinkFlags = $darwinCompatCompileFlags
-    if CONFIG['arch'] !~ /darwin8/
-        # this flag only exists on 10.5 and later
-        $darwinCompatLinkFlags += " -syslibroot,/Developer/SDKs/MacOSX10.4.u.sdk "
-    end
-    # configure based stuff often uses LDFLAGS
-    ENV['LDFLAGS'] =  ENV['LDFLAGS'].to_s + $darwinCompatLinkFlags
-    # xcode uses SDKROOT
-    ENV['SDKROOT'] = "/Developer/SDKs/MacOSX10.4u.sdk"
     $cmakeGenerator = ""
 else
     puts "unsupported platform"
