@@ -37,15 +37,12 @@
 #include <ServiceAPI/bppfunctions.h>
 
 #include "bptypeutil.hh"
+#include "bpurlutil.hh"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <fstream>
-
-
-// 2mb is max allowable read
-#define FA_MAX_READ (1<<21)
 
 const BPCFunctionTable * g_bpCoreFunctions = NULL;
 
@@ -75,33 +72,39 @@ BPPInvoke(void * instance, const char * funcName,
     if (elem) args = bp::Object::build(elem);
 
     // all functions have a "file" argument, validate we can parse it
+    std::string url = (*(args->get("file")));
+    std::string path = bp::urlutil::pathFromURL(url);
 
-    std::string path;
-    
-    if (!strcmp(funcName, "Compress"))
+    if (path.empty())
     {
-/* now we need to extract the file argument and covert to native path, then perform
-   compression!  work here! 
-        bp::url::Url pathUrl;
-        if (!pathUrl.parse((std::string) (*(args->get("file")))))
-        {
-            g_bpCoreFunctions->postError(tid, "bp.fileAccessError",
-                                         "invalid file URI");
-            if (args) delete args;
-            return;
-        } 
+        g_bpCoreFunctions->log(
+            BP_ERROR, "can't parse file:// url: %s", url.c_str());
 
-        // XXX: implement me!
-        g_bpCoreFunctions->postError(tid, "bp.notImplemented", NULL);
+        g_bpCoreFunctions->postError(
+            tid, "bp.fileAccessError", "invalid file URI");
 
-        // now we'll need to convert into a native path :/ and perform the compression
-        //     std::string path = bp::url::pathFromURL(pathUrl.toString());
-        // XXX: write me
-*/
+        if (args) delete args;
+        return;
+    } 
+    
+    if (!strcmp(funcName, "compress"))
+    {
+        g_bpCoreFunctions->log(BP_INFO, "compress called on file: %s",
+                               path.c_str());
+        
+        // XXX: do it!
+    }
+    else if (!strcmp(funcName, "compress"))
+    {        
+        g_bpCoreFunctions->log(BP_INFO, "decompress called on file: %s",
+                               path.c_str());
+
+        // XXX: do it!
     }
     else
     {
-        g_bpCoreFunctions->postError(tid, "bp.internalError", "No such function!");
+        g_bpCoreFunctions->postError(tid, "bp.internalError",
+                                     "No such function!");
     }
 
     if (args) delete args;
@@ -125,13 +128,28 @@ BPArgumentDefinition s_compressFuncArgs[] = {
     }
 };
 
+BPArgumentDefinition s_decompressFuncArgs[] = {
+    {
+        "file",
+        "The file that you would like to decompress.",
+        BPTPath,
+        BP_TRUE
+    }
+};
+
 
 static BPFunctionDefinition s_functions[] = {
     {
-        "Compress",
+        "compress",
         "LZMA Compress a file.",
         sizeof(s_compressFuncArgs)/sizeof(s_compressFuncArgs[0]),
         s_compressFuncArgs
+    },
+    {
+        "decompress",
+        "Decompress a file compressed with LZMA.",
+        sizeof(s_decompressFuncArgs)/sizeof(s_decompressFuncArgs[0]),
+        s_decompressFuncArgs
     }
 };
 
@@ -142,8 +160,8 @@ BPPInitialize(const BPCFunctionTable * bpCoreFunctions,
     // a description of this service
     static BPCoreletDefinition s_serviceDef = {
         "LZMA",
-        0, 0, 1,
-        "Perform LZMA compression.",
+        0, 0, 2,
+        "Perform LZMA (de)compression.",
         sizeof(s_functions)/sizeof(s_functions[0]),
         s_functions
     };
