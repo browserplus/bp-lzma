@@ -68,12 +68,18 @@ SET(EXT_SRCS
 )
 
 SET(SRCS service.cpp)
-SET(HDRS )
+SET(HDRS util/bpsync.hh util/bpthread.hh)
+
+IF (WIN32)
+   FILE(GLOB OS_SRCS "util/*_Windows.cpp")
+ELSE()
+   FILE(GLOB OS_SRCS "util/*_Darwin.cpp" "util/*_UNIX.cpp")
+ENDIF ()
 
 # add required OS libs here
 SET(OSLIBS)
 
-ADD_LIBRARY(${serviceName} MODULE ${EXT_SRCS} ${SRCS} ${HDRS})
+ADD_LIBRARY(${serviceName} MODULE ${EXT_SRCS} ${SRCS} ${OS_SRCS} ${HDRS})
 
 TARGET_LINK_LIBRARIES(${serviceName} easylzma_s ${OSLIBS})
 
