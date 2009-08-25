@@ -29,6 +29,8 @@
 #ifndef __FILETOOLS_HH__
 #define __FILETOOLS_HH__
 
+#include <string>
+
 namespace ft {
     // generate a path within the specified tempDir with a leave named
     // the same as the source

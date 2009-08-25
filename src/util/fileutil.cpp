@@ -22,23 +22,25 @@
 
 #include "fileutil.hh"
 
+#include <sys/stat.h>
+
 std::string
-getPath(std::string tempDir, std::string sourcePath)
+ft::getPath(std::string tempDir, std::string sourcePath)
 {
     // XXX: write me!
     return std::string();
 }
 
 bool
-isRegularFile(std::string path)
+ft::isRegularFile(std::string path)
 {
     // XXX: write me!
     return false;
 }
 
 bool
-mkdir(std::string path)
+ft::mkdir(std::string path)
 {
-    // XXX: write me
-    return false;
+    if (path.empty()) return false;
+    return (0 == ::mkdir(path.c_str(), 0700));
 }

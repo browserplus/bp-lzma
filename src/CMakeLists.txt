@@ -67,7 +67,7 @@ SET(EXT_SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/../external/bp-service-tools/CppTools/src/bpurlutil.cpp
 )
 
-SET(SRCS service.cpp)
+SET(SRCS service.cpp util/fileutil.cpp)
 SET(HDRS util/bpsync.hh util/bpthread.hh)
 
 IF (WIN32)
