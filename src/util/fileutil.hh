@@ -41,8 +41,7 @@ namespace ft {
     bool isRegularFile(std::string path);
 
     // create a directory with user only perms
-    bool mkdir(std::string path);
-
+    bool mkdir(std::string path, bool failIfExists = true);
 };
 
 #endif

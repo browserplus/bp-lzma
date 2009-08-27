@@ -43,6 +43,8 @@
 #include "util/bpthread.hh"
 #include "util/fileutil.hh"
 
+#include "easylzma/compress.h"  
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -53,7 +55,6 @@
 
 const BPCFunctionTable * g_bpCoreFunctions = NULL;
 
-
 // Data structures used to manage tasks.  We only allow one task
 // to run per session to put a limit on per-session resource consumption.
 // In some cases this could prevent us from leveraging multiple logical
@@ -61,15 +62,61 @@ const BPCFunctionTable * g_bpCoreFunctions = NULL;
 // 0wn your proc.
 struct Task {
     typedef enum { T_Compress, T_Decompress } Type;
-
-    Task(Type t) : type(t), tid(0), cid(0), canceled(false) { }
+    Task(Type t) : type(t), inFile(NULL), outFile(NULL), tid(0), cid(0),
+                   canceled(false) { }
+    ~Task() 
+    {
+        if (inFile) {
+            fclose(inFile);
+            inFile = NULL;
+        }
+        if (outFile) {
+            fclose(inFile);
+            inFile = NULL;
+        }
+    }
+    
     Type type;
     std::string inPath;
+    FILE * inFile;
     std::string outPath;    
+    FILE * outFile;
     unsigned int tid; 
     unsigned int cid;
     bool canceled;
 };
+
+/* an input callback that will be passed to elzma_compress_run(), 
+ * it reads from an opened file */  
+static int  
+inputCallback(void *ctx, void *buf, size_t * size)  
+{
+    Task * t = (Task *) ctx;
+    size_t rd = fread(buf, sizeof(char), *size, t->inFile);
+    *size = 0;
+    if (rd == 0 && ferror(t->inFile)) return -1;
+    *size = rd;
+    return 0;
+}
+  
+static size_t  
+outputCallback(void *ctx, const void *buf, size_t size)  
+{
+    Task * t = (Task *) ctx;
+    return fwrite(buf, sizeof(char), size, t->outFile);
+}
+
+static
+void progressCallback(void * ctx, size_t complete, size_t total)
+{
+    Task * t = (Task *) ctx;    
+    if (t->cid) {
+        double pct = (double) complete / (double) total;
+        g_bpCoreFunctions->invoke(t->tid, t->tid,
+                                  bp::Double(100.0 * pct).elemPtr());
+    }
+}
+
 
 static
 void performTask(Task * t)
@@ -77,9 +124,85 @@ void performTask(Task * t)
     std::cout << "tf: performing task: " << t->inPath
               << " -> " << t->outPath << std::endl;
 
-    // XXX: write me!  (where the actual work gets done :/)
+    assert(t != NULL);
+  
+    // open the input file
+    t->inFile = fopen(t->inPath.c_str(), "r");
+    if (!t->inFile) {
+        g_bpCoreFunctions->postError(
+            t->tid, "bp.fileAccessError", "Couldn't open file for reading");
+        return;
+    }
 
-    g_bpCoreFunctions->postError(t->tid, "bp.notImplemented", NULL);
+    t->outFile = fopen(t->outPath.c_str(), "w");
+    if (!t->outFile) {
+        g_bpCoreFunctions->postError(
+            t->tid, "bp.fileAccessError", "Couldn't open file for writing");
+        return;
+    }
+
+    if (fseek(t->inFile, 0, SEEK_END)) {
+        g_bpCoreFunctions->postError(
+            t->tid, "bp.fileAccessError", "Couldn't seek input file");
+        return;
+    }
+
+    long sz = ftell(t->inFile);
+    if (sz < 0) {
+        g_bpCoreFunctions->postError(
+            t->tid, "bp.fileAccessError", "Couldn't ftell input file");
+        return;
+    }
+
+    if (fseek(t->inFile, 0, SEEK_SET)) {
+        g_bpCoreFunctions->postError(
+            t->tid, "bp.fileAccessError", "Couldn't unseek input file");
+        return;
+    }
+
+    /* use the elzma library to determine a good dictionary size for near
+     * optimal compression and minimal runtime memory cost */
+    unsigned int dictSz = elzma_get_dict_size(sz);
+
+    /* allocate compression handle */  
+    elzma_compress_handle hand;
+    hand = elzma_compress_alloc();
+      
+    /* configure the compression run with mostly default parameters  */   
+    int rc = elzma_compress_config(hand, ELZMA_LC_DEFAULT,  
+                                   ELZMA_LP_DEFAULT, ELZMA_PB_DEFAULT,  
+                                   5, dictSz, ELZMA_lzip, sz);
+      
+    /* fail if we couldn't allocate */    
+    if (rc != ELZMA_E_OK) {
+        elzma_compress_free(&hand);
+        g_bpCoreFunctions->postError(
+            t->tid, "bp.internalError", "Error allocating compression engine");
+        return;
+    }
+   
+    /* now run the compression */  
+    {
+        /* run the streaming compression */   
+        rc = elzma_compress_run(hand, inputCallback, (void *) t,  
+                                outputCallback, (void *) t,
+                                progressCallback, (void *) t);
+          
+        if (rc != ELZMA_E_OK) {
+            elzma_compress_free(&hand);
+            g_bpCoreFunctions->postError(
+                t->tid, "bp.compressionError",
+                "Error encountered during compression");
+            return;
+        }
+    }
+
+    fclose(t->outFile);
+    t->outFile = NULL;
+
+    g_bpCoreFunctions->postResults(t->tid, bp::Path(t->outPath).elemPtr());
+      
+    return;
 }
 
 // per-session (aka, per-site) data includes a list of tasks to perform,
@@ -223,6 +346,9 @@ BPPInvoke(void * instance, const char * funcName,
 
     // generate the output path
     std::string outPath = ft::getPath(sd->tempDir, path);
+    // append "lz"
+    outPath.append(".lz");
+    
     if (outPath.empty())
     {
         g_bpCoreFunctions->postError(tid, "bp.internalError",
