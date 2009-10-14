@@ -5,7 +5,7 @@ require 'fileutils'
 require 'pathname'
 require 'open-uri'
 require 'digest'
-require 'md5'
+require 'digest/md5'
 include Config
 
 topDir = File.dirname(File.expand_path(__FILE__))
