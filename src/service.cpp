@@ -110,9 +110,10 @@ static
 void progressCallback(void * ctx, size_t complete, size_t total)
 {
     Task * t = (Task *) ctx;    
+    printf("proggy (%lu) %d/%d\n", t->cid, complete, total);
     if (t->cid) {
         double pct = (double) complete / (double) total;
-        g_bpCoreFunctions->invoke(t->tid, t->tid,
+        g_bpCoreFunctions->invoke(t->tid, t->cid,
                                   bp::Double(100.0 * pct).elemPtr());
     }
 }
@@ -121,9 +122,6 @@ void progressCallback(void * ctx, size_t complete, size_t total)
 static
 void performTask(Task * t)
 {
-    std::cout << "tf: performing task: " << t->inPath
-              << " -> " << t->outPath << std::endl;
-
     assert(t != NULL);
   
     // open the input file
@@ -187,7 +185,7 @@ void performTask(Task * t)
         rc = elzma_compress_run(hand, inputCallback, (void *) t,  
                                 outputCallback, (void *) t,
                                 progressCallback, (void *) t);
-          
+
         if (rc != ELZMA_E_OK) {
             elzma_compress_free(&hand);
             g_bpCoreFunctions->postError(
@@ -221,8 +219,6 @@ struct SessionData {
 static
 void * threadFunc(void * sdp) 
 {
-    std::cout << "tf: threadfunc" << std::endl;
-    
     SessionData * sd = (SessionData *) sdp;
 
     sd->mutex.lock();
@@ -243,15 +239,11 @@ void * threadFunc(void * sdp)
             sd->taskList.erase(sd->taskList.begin());
 
         } else {
-            std::cout << "tf: waiting" << std::endl;
             sd->cond.wait(&(sd->mutex));
-            std::cout << "tf: waited" << std::endl;
         }
     }
 
     sd->mutex.unlock();
-
-    std::cout << "tf: /threadfunc" << std::endl;
 
     return NULL;
 }
@@ -427,7 +419,7 @@ BPPInitialize(const BPCFunctionTable * bpCoreFunctions,
     // a description of this service
     static BPCoreletDefinition s_serviceDef = {
         "LZMA",
-        0, 0, 2,
+        0, 0, 3,
         "Perform LZMA (de)compression.",
         sizeof(s_functions)/sizeof(s_functions[0]),
         s_functions
