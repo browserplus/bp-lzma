@@ -170,7 +170,7 @@ ft::fopen_binary_read(std::string utf8Path)
 #ifdef WIN32    
     return _wfopen(utf8ToWide(utf8Path).c_str(), L"rb");
 #else
-    return fopen(utf8Path, "r");
+    return fopen(utf8Path.c_str(), "r");
 #endif
 }
 
@@ -181,6 +181,6 @@ ft::fopen_binary_write(std::string utf8Path)
 #ifdef WIN32    
     return _wfopen(utf8ToWide(utf8Path).c_str(), L"wb");
 #else
-    return fopen(utf8Path, "w");
+    return fopen(utf8Path.c_str(), "w");
 #endif
 }
