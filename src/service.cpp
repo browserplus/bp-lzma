@@ -82,7 +82,7 @@ struct Task {
     std::string outPath;    
     FILE * outFile;
     unsigned int tid; 
-    unsigned int cid;
+    long long cid;
     bool canceled;
 };
 
@@ -93,6 +93,8 @@ inputCallback(void *ctx, void *buf, size_t * size)
 {
     Task * t = (Task *) ctx;
     size_t rd = fread(buf, sizeof(char), *size, t->inFile);
+    g_bpCoreFunctions->log(BP_DEBUG, "read %lu bytes from input file",
+                           rd);
     *size = 0;
     if (rd == 0 && ferror(t->inFile)) return -1;
     *size = rd;
@@ -103,6 +105,9 @@ static size_t
 outputCallback(void *ctx, const void *buf, size_t size)  
 {
     Task * t = (Task *) ctx;
+    g_bpCoreFunctions->log(BP_DEBUG, "Writing %lu bytes to output file",
+                           size);
+  
     return fwrite(buf, sizeof(char), size, t->outFile);
 }
 
@@ -118,21 +123,20 @@ void progressCallback(void * ctx, size_t complete, size_t total)
     }
 }
 
-
 static
 void performTask(Task * t)
 {
     assert(t != NULL);
   
     // open the input file
-    t->inFile = fopen(t->inPath.c_str(), "r");
+    t->inFile = ft::fopen_binary_read(t->inPath);
     if (!t->inFile) {
         g_bpCoreFunctions->postError(
             t->tid, "bp.fileAccessError", "Couldn't open file for reading");
         return;
     }
 
-    t->outFile = fopen(t->outPath.c_str(), "w");
+    t->outFile = ft::fopen_binary_write(t->outPath);
     if (!t->outFile) {
         g_bpCoreFunctions->postError(
             t->tid, "bp.fileAccessError", "Couldn't open file for writing");
@@ -359,6 +363,10 @@ BPPInvoke(void * instance, const char * funcName,
     if (args->has("progressCB", BPTCallBack)) {
         task.cid = (long long) *(args->get("progressCB"));
     }
+
+    g_bpCoreFunctions->log(BP_INFO, "LZMA compressing '%s' to '%s'",
+                           task.inPath.c_str(),
+                           task.outPath.c_str());
     
     // add task to work queue and wakeup compression thread
     sd->mutex.lock();
@@ -403,13 +411,18 @@ static BPFunctionDefinition s_functions[] = {
         "LZMA Compress a file.",
         sizeof(s_compressFuncArgs)/sizeof(s_compressFuncArgs[0]),
         s_compressFuncArgs
-    },
-    {
+    }
+#if 0
+    // version 1.0.x will not include support for decompression,
+    // we need to add some other features in the BrowserPlus platform
+    // to allow the user to securely select a writable location
+    ,{
         "decompress",
         "Decompress a file compressed with LZMA.",
         sizeof(s_decompressFuncArgs)/sizeof(s_decompressFuncArgs[0]),
         s_decompressFuncArgs
     }
+#endif
 };
 
 const BPCoreletDefinition *
@@ -419,7 +432,7 @@ BPPInitialize(const BPCFunctionTable * bpCoreFunctions,
     // a description of this service
     static BPCoreletDefinition s_serviceDef = {
         "LZMA",
-        0, 0, 3,
+        1, 0, 0,
         "Perform LZMA (de)compression.",
         sizeof(s_functions)/sizeof(s_functions[0]),
         s_functions

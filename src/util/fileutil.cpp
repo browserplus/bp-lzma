@@ -162,3 +162,25 @@ ft::mkdir(std::string path, bool failIfExists)
     if (!failIfExists && errno == EEXIST) return true;
     return false;
 }
+
+FILE *
+ft::fopen_binary_read(std::string utf8Path)
+{
+    if (utf8Path.empty()) return false;
+#ifdef WIN32    
+    return _wfopen(utf8ToWide(utf8Path).c_str(), L"rb");
+#else
+    return fopen(utf8Path, "r");
+#endif
+}
+
+FILE *
+ft::fopen_binary_write(std::string utf8Path)
+{
+    if (utf8Path.empty()) return false;
+#ifdef WIN32    
+    return _wfopen(utf8ToWide(utf8Path).c_str(), L"wb");
+#else
+    return fopen(utf8Path, "w");
+#endif
+}

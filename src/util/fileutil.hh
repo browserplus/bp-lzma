@@ -42,6 +42,9 @@ namespace ft {
 
     // create a directory with user only perms
     bool mkdir(std::string path, bool failIfExists = true);
+
+    FILE * fopen_binary_read(std::string utf8Path);
+    FILE * fopen_binary_write(std::string utf8Path);
 };
 
 #endif
