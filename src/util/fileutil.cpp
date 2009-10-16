@@ -33,6 +33,7 @@
 
 #include <sstream>
 
+#if 0
 static
 std::string dirName(const std::string & path)
 {
@@ -48,6 +49,7 @@ std::string dirName(const std::string & path)
 
     return dirname;
 }
+#endif
 
 static
 std::string fileName(const std::string & path)
@@ -90,22 +92,61 @@ ft::getPath(std::string tempDir, std::string sourcePath)
         tempDir = pathAppend(tempDir, ss.str());        
     }
     if (!mkdir(tempDir, true)) return std::string();
-    
     // append the filename of sourcePath
     tempDir = pathAppend(tempDir,fileName(sourcePath));
     
     return tempDir;
 }
 
+#ifdef WIN32
+#include <windows.h>
+#include <errno.h>
+#include <time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <stdio.h>
+#include <errno.h>
+
+std::wstring
+utf8ToWide(const std::string& sIn)
+{
+    std::wstring rval;
+    // See how much space we need.
+    int nChars = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, sIn.c_str(), 
+                                     -1, 0, 0);
+
+    // Do the conversion.
+    wchar_t* pawBuf = new wchar_t[nChars];
+    int nRtn = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, sIn.c_str(), 
+                                   -1, pawBuf, nChars);
+    if (nRtn==0) {
+        delete[] pawBuf;
+    } else {
+        rval = pawBuf;
+        delete[] pawBuf;
+    }
+    return rval;
+}
+#endif
+
 bool
 ft::isRegularFile(std::string path)
 {
     if (path.empty()) return false;
+#ifdef WIN32
+    struct _stat s;
+    memset((void *) &s, 0, sizeof(s));
+    std::wstring wpath = utf8ToWide(path);
+    if (!_wstat(wpath.c_str(), &s)) {
+        return (s.st_mode & _S_IFREG);        
+    }
+#else
     struct stat s;
     memset((void *) &s, 0, sizeof(s));
     if (!stat(path.c_str(), &s)) {
         return ((s.st_mode & S_IFMT) == S_IFREG);
     }
+#endif
     return false;
 }
 
@@ -113,7 +154,11 @@ bool
 ft::mkdir(std::string path, bool failIfExists)
 {
     if (path.empty()) return false;
+#ifdef WIN32    
+    if (0 == ::_wmkdir(utf8ToWide(path).c_str())) return true;
+#else
     if (0 == ::mkdir(path.c_str(), 0700)) return true;
+#endif
     if (!failIfExists && errno == EEXIST) return true;
     return false;
 }
