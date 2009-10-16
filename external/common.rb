@@ -16,8 +16,8 @@ $patchCmd = "patch"
 $libSuffix = "a"
 if CONFIG['arch'] =~ /mswin/
     $platform = "Windows"
-    $sevenZCmd = "#{topDir}\\WinTools\\bin\\7z.exe"
-    $patchCmd = "#{topDir}\\WinTools\\bin\\patch.exe"
+    $sevenZCmd = File.join(topDir, "WinTools", "7z.exe");
+    $patchCmd = File.join(topDir, "WinTools", "patch.exe");
     $libSuffix = "lib"
     $cmakeGenerator = "-G \"Visual Studio 9 2008\""
 
