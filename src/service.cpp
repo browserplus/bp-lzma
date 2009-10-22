@@ -432,7 +432,7 @@ BPPInitialize(const BPCFunctionTable * bpCoreFunctions,
     // a description of this service
     static BPCoreletDefinition s_serviceDef = {
         "LZMA",
-        1, 0, 1,
+        1, 0, 2,
         "Perform LZMA (de)compression.",
         sizeof(s_functions)/sizeof(s_functions[0]),
         s_functions
