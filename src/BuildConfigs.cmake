@@ -1,22 +1,54 @@
+#####
+#  ***** BEGIN LICENSE BLOCK *****
+#  The contents of this file are subject to the Mozilla Public License
+#  Version 1.1 (the "License"); you may not use this file except in
+#  compliance with the License. You may obtain a copy of the License at
+#  http://www.mozilla.org/MPL/
+#  
+#  Software distributed under the License is distributed on an "AS IS"
+#  basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
+#  License for the specific language governing rights and limitations
+#  under the License.
+#  
+#  The Original Code is BrowserPlus (tm).
+#  
+#  The Initial Developer of the Original Code is Yahoo!.
+#  Portions created by Yahoo! are Copyright (C) 2006-2009 Yahoo!.
+#  All Rights Reserved.
+#  
+#  Contributor(s): 
+#  ***** END LICENSE BLOCK *****
+#####
+#####
+# BuildConfigs.cmake
+#
+# A CMake build file to setup some default compiler and linker settings for
+# VC and gcc.
+# 
+# This file is intended to be included by client CMakeLists.txt files.
+# 
+# Original Author: Lloyd Hilaiel
+#####
+
 # require cmake 2.6.2 or higher
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6.2 FATAL_ERROR)
-
-IF (POLICY CMP0011) 
+ 
+IF (POLICY CMP0011)
   cmake_policy(SET CMP0011 OLD)
-ENDIF (POLICY CMP0011) 
+ENDIF (POLICY CMP0011)
 cmake_policy(SET CMP0003 NEW)
 cmake_policy(SET CMP0009 NEW)
-
-SET (CMAKE_CONFIGURATION_TYPES Debug Release 
+ 
+SET (CMAKE_CONFIGURATION_TYPES Debug Release
      CACHE STRING "bp-ruby build configs" FORCE)
-
+ 
 # reduce redundancy in the cmake language
 SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS 1)
-
+ 
 IF (NOT CMAKE_BUILD_TYPE)
   SET(CMAKE_BUILD_TYPE "Debug")
 ENDIF ()
-
+ 
 # now set up the build configurations
 IF(WIN32)
     SET(win32Defs "/DWINDOWS /D_WINDOWS /DWIN32 /D_WIN32 /DXP_WIN32 /DUNICODE /D_UNICODE /DWIN32_LEAN_AND_MEAN /DNOSOUND /DNOCOMM /DNOMCX /DNOSERVICE /DNOIME /DNORPC")
@@ -33,7 +65,7 @@ IF(WIN32)
     #
     SET(noDefaultLibFlagsDebug "/NODEFAULTLIB:libc.lib /NODEFAULTLIB:libcmt.lib /NODEFAULTLIB:msvcrt.lib /NODEFAULTLIB:libcd.lib /NODEFAULTLIB:msvcrtd.lib")
     SET(noDefaultLibFlagsRelease "/NODEFAULTLIB:libc.lib /NODEFAULTLIB:msvcrt.lib /NODEFAULTLIB:libcd.lib /NODEFAULTLIB:libcmtd.lib /NODEFAULTLIB:msvcrtd.lib")
-
+ 
     SET(linkFlags "/DEBUG /MANIFEST:NO")
     SET(linkFlagsDebug " ${noDefaultLibFlagsDebug}")
     SET(linkFlagsRelease " /INCREMENTAL:NO /OPT:REF /OPT:ICF ${noDefaultLibFlagsRelease}")
@@ -50,7 +82,7 @@ IF(WIN32)
         CACHE STRING "BrowserPlus shared debug linker flags" FORCE)
     SET(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${linkFlagsRelease}"
         CACHE STRING "BrowserPlus shared release linker flags" FORCE)
-
+ 
     SET(CMAKE_MODULE_LINKER_FLAGS "${linkFlags}"
         CACHE STRING "BrowserPlus module linker flags" FORCE)
     SET(CMAKE_MODULE_LINKER_FLAGS_DEBUG "${linkFlagsDebug}"
@@ -61,22 +93,22 @@ ELSE ()
     SET(isysrootFlag)
     IF (APPLE)
       SET (CMAKE_OSX_SYSROOT "/Developer/SDKs/MacOSX10.4u.sdk"
-	       CACHE STRING "Compile for tiger backwards compat" FORCE)
+CACHE STRING "Compile for tiger backwards compat" FORCE)
       SET(isysrootFlag "-isysroot ${CMAKE_OSX_SYSROOT}")
       SET(minVersionFlag "-mmacosx-version-min=10.4")
       SET(CMAKE_FRAMEWORK_PATH "${CMAKE_OSX_SYSROOT}/System/Library/Frameworks"
-	      CACHE STRING "use 10.4 frameworks" FORCE)
-
+CACHE STRING "use 10.4 frameworks" FORCE)
+ 
       SET(CMAKE_MODULE_LINKER_FLAGS "${minVersionFlag} ${isysrootFlag}")
       SET(CMAKE_EXE_LINKER_FLAGS "-dead_strip -dead_strip_dylibs ${minVersionFlag} ${isysrootFlag}")
-      SET(CMAKE_SHARED_LINKER_FLAGS "${minVersionFlag} ${isysrootFlag}  -Wl,-single_module")
+      SET(CMAKE_SHARED_LINKER_FLAGS "${minVersionFlag} ${isysrootFlag} -Wl,-single_module")
       ADD_DEFINITIONS(-DMACOSX -D_MACOSX -DMAC -D_MAC -DXP_MACOSX)
       SET(CMAKE_C_COMPILER gcc-4.0)
       SET(CMAKE_CXX_COMPILER g++-4.0)
     ELSE()
       ADD_DEFINITIONS(-DLINUX -D_LINUX -DXP_LINUX)
     ENDIF()
-
+ 
     SET(CMAKE_CXX_FLAGS "-Wall ${isysrootFlag} ${minVersionFlag}")
     SET(CMAKE_CXX_FLAGS_DEBUG "-DDEBUG -g")
     SET(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -Os")
@@ -84,3 +116,4 @@ ELSE ()
     SET(CMAKE_EXE_LINKER_FLAGS_RELEASE "-Wl,-x")
     SET(CMAKE_SHARED_LINKER_FLAGS_RELEASE "-Wl,-x")
 ENDIF ()
+ 
