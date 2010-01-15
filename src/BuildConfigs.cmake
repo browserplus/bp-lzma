@@ -33,6 +33,12 @@
 # require cmake 2.6.2 or higher
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6.2 FATAL_ERROR)
  
+# allow use with cmake 2.8 or higher
+IF (APPLE)
+   SET (CMAKE_OSX_DEPLOYMENT_TARGET "10.4"
+        CACHE STRING "Compile for tiger deployment" FORCE)
+ENDIF ()
+
 IF (POLICY CMP0011)
   cmake_policy(SET CMP0011 OLD)
 ENDIF (POLICY CMP0011)
