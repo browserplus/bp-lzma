@@ -203,6 +203,8 @@ void performTask(Task * t)
     t->outFile = NULL;
 
     g_bpCoreFunctions->postResults(t->tid, bp::Path(t->outPath).elemPtr());
+
+    elzma_compress_free(&hand);
       
     return;
 }
