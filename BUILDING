@@ -1,11 +1,12 @@
 how to build:
 
  git submodule init
- git submodule update
+ git submodule update 
+ cd external && ruby build.rb
  cd ../src
  rm -rf build && mkdir build && cd build
- cmake ..
- make
+ cmake ..  (cmake -G "Visual Studio 9 2008" .. on Windows)
+ make  (devenv LZMAService.sln on Windows)
 
 A dir LZMA should be generated which is your service ready to 
 be installed using the BrowserPlus SDK:

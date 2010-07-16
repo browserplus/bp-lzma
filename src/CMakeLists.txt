@@ -83,15 +83,6 @@ ADD_LIBRARY(${serviceName} MODULE ${EXT_SRCS} ${SRCS} ${OS_SRCS} ${HDRS})
 
 TARGET_LINK_LIBRARIES(${serviceName} easylzma_s ${OSLIBS})
 
-# Pre-build step, build our externals
-#
-ADD_CUSTOM_TARGET(
-    ${serviceName}Externals ALL
-    COMMAND ruby build.rb
-    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../external"
-    COMMENT Building externals...)
-ADD_DEPENDENCIES(${serviceName} ${serviceName}Externals)
-
 # create service directory
 FILE(MAKE_DIRECTORY ${outputDir})
 
