@@ -52,14 +52,14 @@ IF (NOT CMAKE_BUILD_TYPE)
 ENDIF ()
 
 INCLUDE_DIRECTORIES(
-  "${CMAKE_CURRENT_SOURCE_DIR}/../external/${CMAKE_SYSTEM_NAME}/include"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../external/dist/include"
   "${CMAKE_CURRENT_SOURCE_DIR}/../external/bpsdk/include"
   "${CMAKE_CURRENT_SOURCE_DIR}/../external/bp-service-tools/CppTools/src"
 )
 
 LINK_DIRECTORIES(
-  "${CMAKE_CURRENT_SOURCE_DIR}/../external/${CMAKE_SYSTEM_NAME}/lib"
-  "${CMAKE_CURRENT_SOURCE_DIR}/../external/${CMAKE_SYSTEM_NAME}/lib/${CMAKE_BUILD_TYPE}"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../external/dist/lib"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../external/dist/lib/${CMAKE_BUILD_TYPE}"
 )
 
 SET(EXT_SRCS
@@ -98,3 +98,12 @@ IF (APPLE)
   ADD_CUSTOM_COMMAND(TARGET ${serviceName} POST_BUILD
                      COMMAND strip -x \"${outputDir}/${ServiceLibrary}\")
 ENDIF (APPLE)
+
+# Pre-build step, build our externals
+#
+ADD_CUSTOM_TARGET(
+    ${serviceName}Externals ALL
+    COMMAND ruby build.rb
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../external"
+    COMMENT Building externals...)
+ADD_DEPENDENCIES(${serviceName} ${serviceName}Externals)
