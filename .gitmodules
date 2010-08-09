@@ -7,3 +7,6 @@
 [submodule "external/bpsdk"]
 	path = external/bpsdk
 	url = git://github.com/browserplus/bp-service-api.git
+[submodule "external/bp-service-framework"]
+	path = external/bp-service-framework
+	url = git://github.com/browserplus/bp-service-framework.git
