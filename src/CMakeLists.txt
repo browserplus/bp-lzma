@@ -45,12 +45,6 @@ PROJECT(${serviceName}Service)
 
 SET (outputDir "${CMAKE_CURRENT_BINARY_DIR}/${serviceName}")
 
-# default to a debug build.  This gets us symbols by default under
-# the cmake makefile generator
-IF (NOT CMAKE_BUILD_TYPE)
-  SET(CMAKE_BUILD_TYPE "Release")
-ENDIF ()
-
 INCLUDE_DIRECTORIES(
   "${CMAKE_CURRENT_SOURCE_DIR}/../external/dist/include"
   "${CMAKE_CURRENT_SOURCE_DIR}/../external/bpsdk/include"
