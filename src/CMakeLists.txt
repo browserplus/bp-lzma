@@ -37,7 +37,7 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.1)
 
-INCLUDE(BuildConfigs.cmake)
+INCLUDE(${CMAKE_CURRENT_SOURCE_DIR}/../external/bp-service-framework/build_support/BuildConfigs.cmake)
 
 SET (serviceName LZMA)
 
