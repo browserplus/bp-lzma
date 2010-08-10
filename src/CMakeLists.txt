@@ -48,10 +48,17 @@ INCLUDE_DIRECTORIES(
   "${CMAKE_CURRENT_SOURCE_DIR}/../external/bp-service-tools/CppTools/src"
 )
 
-LINK_DIRECTORIES(
-  "${CMAKE_CURRENT_SOURCE_DIR}/../external/dist/lib"
-  "${CMAKE_CURRENT_SOURCE_DIR}/../external/dist/lib/${CMAKE_BUILD_TYPE}"
-)
+IF ("${CMAKE_BUILD_TYPE}" STREQUAL "CodeCoverage")
+  LINK_DIRECTORIES(
+    "${CMAKE_CURRENT_SOURCE_DIR}/../external/dist/lib"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../external/dist/lib/Debug"
+  )
+ELSE ()
+  LINK_DIRECTORIES(
+    "${CMAKE_CURRENT_SOURCE_DIR}/../external/dist/lib"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../external/dist/lib/${CMAKE_BUILD_TYPE}"
+  )
+ENDIF ()
 
 SET(EXT_SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/../external/bp-service-tools/CppTools/src/bptypeutil.cpp
