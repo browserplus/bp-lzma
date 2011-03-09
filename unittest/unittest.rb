@@ -28,7 +28,7 @@ class TestLZMA < Test::Unit::TestCase
     @cwd = File.dirname(File.expand_path(__FILE__))
     @service = File.join(@cwd, "../#{subdir}")
     @providerDir = File.expand_path(File.join(@cwd, "providerDir"))
-    @lzma = LZMA.new
+    #@lzma = LZMA.new
   end
   
   def teardown
