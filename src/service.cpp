@@ -36,12 +36,12 @@
 #include <ServiceAPI/bpcfunctions.h>
 #include <ServiceAPI/bppfunctions.h>
 
+#include "bputil/bpthread.h"
+#include "bputil/bpsync.h"
+#include "bp-file/bpfile.h"
+
 #include "bptypeutil.hh"
 #include "bpurlutil.hh"
-
-#include "util/bpsync.hh"
-#include "util/bpthread.hh"
-#include "util/fileutil.hh"
 
 #include "easylzma/compress.h"  
 
@@ -62,25 +62,23 @@ const BPCFunctionTable * g_bpCoreFunctions = NULL;
 // 0wn your proc.
 struct Task {
     typedef enum { T_Compress, T_Decompress } Type;
-    Task(Type t) : type(t), inFile(NULL), outFile(NULL), tid(0), cid(0),
+    Task(Type t) : type(t), tid(0), cid(0),
                    canceled(false) { }
     ~Task() 
     {
-        if (inFile) {
-            fclose(inFile);
-            inFile = NULL;
+        if (inFile.is_open()) {
+            inFile.close();
         }
-        if (outFile) {
-            fclose(inFile);
-            inFile = NULL;
+        if (outFile.is_open()) {
+            inFile.close();
         }
     }
     
     Type type;
     std::string inPath;
-    FILE * inFile;
+    std::ifstream inFile;
     std::string outPath;    
-    FILE * outFile;
+    std::ofstream outFile;
     unsigned int tid; 
     long long cid;
     bool canceled;
@@ -92,11 +90,12 @@ static int
 inputCallback(void *ctx, void *buf, size_t * size)  
 {
     Task * t = (Task *) ctx;
-    size_t rd = fread(buf, sizeof(char), *size, t->inFile);
+    t->inFile.read((char*)buf, *size);
+    size_t rd = t->inFile.gcount();
     g_bpCoreFunctions->log(BP_DEBUG, "read %lu bytes from input file",
                            rd);
     *size = 0;
-    if (rd == 0 && ferror(t->inFile)) return -1;
+    if (rd == 0 && !t->inFile.good()) return -1;
     *size = rd;
     return 0;
 }
@@ -108,7 +107,8 @@ outputCallback(void *ctx, const void *buf, size_t size)
     g_bpCoreFunctions->log(BP_DEBUG, "Writing %lu bytes to output file",
                            size);
   
-    return fwrite(buf, sizeof(char), size, t->outFile);
+    t->outFile.write((char*)buf, size);
+    return t->outFile.bad() ? 0 : size;
 }
 
 static
@@ -129,36 +129,23 @@ void performTask(Task * t)
     assert(t != NULL);
   
     // open the input file
-    t->inFile = ft::fopen_binary_read(t->inPath);
-    if (!t->inFile) {
+    if (!bp::file::openReadableStream(t->inFile, t->inPath, std::ios_base::in | std::ios_base::binary)) {
         g_bpCoreFunctions->postError(
             t->tid, "bp.fileAccessError", "Couldn't open file for reading");
         return;
     }
-
-    t->outFile = ft::fopen_binary_write(t->outPath);
-    if (!t->outFile) {
+    if (!bp::file::openWritableStream(t->outFile, t->outPath, std::ios_base::out | std::ios_base::binary)) {
         g_bpCoreFunctions->postError(
             t->tid, "bp.fileAccessError", "Couldn't open file for writing");
         return;
     }
 
-    if (fseek(t->inFile, 0, SEEK_END)) {
-        g_bpCoreFunctions->postError(
-            t->tid, "bp.fileAccessError", "Couldn't seek input file");
-        return;
-    }
-
-    long sz = ftell(t->inFile);
+    t->inFile.seekg(0, std::ios::end);
+    size_t sz = t->inFile.tellg();
+    t->inFile.seekg(0, std::ios::beg);
     if (sz < 0) {
         g_bpCoreFunctions->postError(
             t->tid, "bp.fileAccessError", "Couldn't ftell input file");
-        return;
-    }
-
-    if (fseek(t->inFile, 0, SEEK_SET)) {
-        g_bpCoreFunctions->postError(
-            t->tid, "bp.fileAccessError", "Couldn't unseek input file");
         return;
     }
 
@@ -199,8 +186,7 @@ void performTask(Task * t)
         }
     }
 
-    fclose(t->outFile);
-    t->outFile = NULL;
+    t->outFile.close();
 
     g_bpCoreFunctions->postResults(t->tid, bp::Path(t->outPath).elemPtr());
 
@@ -214,10 +200,10 @@ void performTask(Task * t)
 // to support asynchronous cancelation in the middle of a (de)compression),
 // and a simple mutex
 struct SessionData {
-    std::list<Task> taskList;
-    bp::sync::Mutex mutex;
-    bp::sync::Condition cond;
-    bp::thread::Thread thread;
+    std::list<Task*> taskList;
+    bplus::sync::Mutex mutex;
+    bplus::sync::Condition cond;
+    bplus::thread::Thread thread;
     bool running;
     std::string tempDir;
 };
@@ -236,13 +222,15 @@ void * threadFunc(void * sdp)
             // perform the (de)compression task *outside* of our lock,
             // in the case of async cancelation, the bool 'canceled'
             // will be toggled
-            performTask(&(*(sd->taskList.begin())));
+            Task* task = *(sd->taskList.begin());
+            performTask(task);
 
             sd->mutex.lock();
 
             // the task was either canceled or completed.  in either case
             // we can delete it *inside* the lock
             sd->taskList.erase(sd->taskList.begin());
+            delete task;
 
         } else {
             sd->cond.wait(&(sd->mutex));
@@ -264,7 +252,7 @@ BPPAllocate(void ** instance, unsigned int, const BPElement * context)
     sd->tempDir = (std::string) (*(args->get("temp_dir")));
     delete args;
 
-    (void) ft::mkdir(sd->tempDir);
+    boost::filesystem::create_directories(sd->tempDir);
     g_bpCoreFunctions->log(BP_INFO, "session allocated, using temp dir: %s",
                            (sd->tempDir.empty() ? "<empty>"
                                                 : sd->tempDir.c_str()));
@@ -287,7 +275,7 @@ BPPDestroy(void * instance)
     // mark the first task as canceled to kick the compression thread out
     // of it's work cycle
     if (sd->taskList.size() > 0) {
-        sd->taskList.begin()->canceled = true;
+        (*(sd->taskList.begin()))->canceled = true;
     }
     
     sd->running = false;
@@ -343,11 +331,11 @@ BPPInvoke(void * instance, const char * funcName,
     } 
 
     // generate the output path
-    std::string outPath = ft::getPath(sd->tempDir, path);
+    boost::filesystem::path  outPath = bp::file::getTempPath(sd->tempDir, path);
     // append "lz"
-    outPath.append(".lz");
+    outPath.replace_extension(".lz");
     
-    if (outPath.empty())
+    if (outPath.string().empty())
     {
         g_bpCoreFunctions->postError(tid, "bp.internalError",
                                      "can't generate output path");
@@ -356,19 +344,19 @@ BPPInvoke(void * instance, const char * funcName,
     } 
 
     // Allocate the Task structure
-    Task task(t);
-    task.tid = tid;
-    task.inPath = path;
-    task.outPath = outPath;
+    Task* task = new Task(t);
+    task->tid = tid;
+    task->inPath = path;
+    task->outPath = outPath.string();
     
     // append callback if available
     if (args->has("progressCB", BPTCallBack)) {
-        task.cid = (long long) *(args->get("progressCB"));
+        task->cid = (long long) *(args->get("progressCB"));
     }
 
     g_bpCoreFunctions->log(BP_INFO, "LZMA compressing '%s' to '%s'",
-                           task.inPath.c_str(),
-                           task.outPath.c_str());
+                           task->inPath.c_str(),
+                           task->outPath.c_str());
     
     // add task to work queue and wakeup compression thread
     sd->mutex.lock();

@@ -44,6 +44,7 @@ INCLUDE(${CMAKE_CURRENT_SOURCE_DIR}/../external/bp-build-templates/cmake/BuildCo
 
 INCLUDE_DIRECTORIES(
   "${CMAKE_CURRENT_SOURCE_DIR}/../external/dist/include"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../external/bp-service-framework/include"
   "${CMAKE_CURRENT_SOURCE_DIR}/../external/bpsdk/include"
   "${CMAKE_CURRENT_SOURCE_DIR}/../external/bp-service-tools/CppTools/src"
 )
@@ -65,15 +66,26 @@ SET(EXT_SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/../external/bp-service-tools/CppTools/src/bpurlutil.cpp
 )
 
+# add required OS libs here
+SET(BOOST_LIBS)
+SET(OS_LIBS)
 IF (WIN32)
-   FILE(GLOB OS_SRCS "util/*_Windows.cpp")
+   # Visual Studio does some autolink magic with boost, no need
+   # to specify library
+   SET (OS_LIBS Winmm Ws2_32 mswsock rpcrt4 psapi)
 ELSE()
-   FILE(GLOB OS_SRCS "util/*_Darwin.cpp" "util/*_UNIX.cpp")
+   SET(BOOST_LIBS "boost_filesystem" "boost_system")
+   IF (APPLE)
+       # need carbon headers and library
+       FIND_LIBRARY(CARBON_LIBRARY Carbon)
+       MARK_AS_ADVANCED(CARBON_LIBRARY)
+       SET(OS_LIBS ${CARBON_LIBRARY})
+   ENDIF()
 ENDIF ()
 
-SET(SRCS service.cpp util/fileutil.cpp ${EXT_SRCS} ${OS_SRCS})
-SET(HDRS util/bpsync.hh util/bpthread.hh)
-SET(LIBS easylzma_s)
+SET(SRCS service.cpp ${EXT_SRCS})
+SET(HDRS)
+SET(LIBS easylzma_s bpfile_s ${BOOST_LIBS} ${OS_LIBS})
 
 BPAddCppService()
 

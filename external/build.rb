@@ -15,9 +15,17 @@ $order = {
   :output_dir => File.join(topDir, "dist"),
   :packages => [
                 "easylzma",
+                "boost",
+                "bp-file",
                 "service_testing"
                ],
   :verbose => true,
+  :use_source => {
+    "bp-file"=>File.join(topDir, "bp-file")
+  },
+  :use_recipe => {
+    "bp-file"=>File.join(topDir, "bp-file", "recipe.rb")
+  }
 }
 
 b = Bakery.new $order
