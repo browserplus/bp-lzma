@@ -61,11 +61,6 @@ ELSE ()
   )
 ENDIF ()
 
-SET(EXT_SRCS
-  ${CMAKE_CURRENT_SOURCE_DIR}/../external/bp-service-tools/CppTools/src/bptypeutil.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/../external/bp-service-tools/CppTools/src/bpurlutil.cpp
-)
-
 # add required OS libs here
 SET(BOOST_LIBS)
 SET(OS_LIBS)
@@ -83,7 +78,7 @@ ELSE()
    ENDIF()
 ENDIF ()
 
-SET(SRCS service.cpp ${EXT_SRCS})
+SET(SRCS service.cpp)
 SET(HDRS)
 SET(LIBS easylzma_s bpfile_s ${BOOST_LIBS} ${OS_LIBS})
 

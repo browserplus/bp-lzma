@@ -36,12 +36,12 @@
 #include <ServiceAPI/bpcfunctions.h>
 #include <ServiceAPI/bppfunctions.h>
 
+#include "bpservice/bpservice.h"
 #include "bputil/bpthread.h"
 #include "bputil/bpsync.h"
 #include "bp-file/bpfile.h"
 
-#include "bptypeutil.hh"
-#include "bpurlutil.hh"
+#include "bpurlutil.cpp"
 
 #include "easylzma/compress.h"  
 
@@ -119,7 +119,7 @@ void progressCallback(void * ctx, size_t complete, size_t total)
     if (t->cid) {
         double pct = (double) complete / (double) total;
         g_bpCoreFunctions->invoke(t->tid, t->cid,
-                                  bp::Double(100.0 * pct).elemPtr());
+                                  bplus::Double(100.0 * pct).elemPtr());
     }
 }
 
@@ -188,7 +188,7 @@ void performTask(Task * t)
 
     t->outFile.close();
 
-    g_bpCoreFunctions->postResults(t->tid, bp::Path(t->outPath).elemPtr());
+    g_bpCoreFunctions->postResults(t->tid, bplus::Path(t->outPath).elemPtr());
 
     elzma_compress_free(&hand);
       
@@ -248,7 +248,7 @@ BPPAllocate(void ** instance, unsigned int, const BPElement * context)
     SessionData * sd = new SessionData;
 
     // extract the temporary directory
-    bp::Object * args = bp::Object::build(context);
+    bplus::Object * args = bplus::Object::build(context);
     sd->tempDir = (std::string) (*(args->get("temp_dir")));
     delete args;
 
@@ -311,8 +311,8 @@ BPPInvoke(void * instance, const char * funcName,
     }
     
 
-    bp::Object * args = NULL;
-    if (elem) args = bp::Object::build(elem);
+    bplus::Object * args = NULL;
+    if (elem) args = bplus::Object::build(elem);
 
     // all functions have a "file" argument, validate we can parse it
     std::string url = (*(args->get("file")));
