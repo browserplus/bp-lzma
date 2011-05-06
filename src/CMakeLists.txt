@@ -45,8 +45,6 @@ INCLUDE(${CMAKE_CURRENT_SOURCE_DIR}/../external/bp-build-templates/cmake/BuildCo
 INCLUDE_DIRECTORIES(
   "${CMAKE_CURRENT_SOURCE_DIR}/../external/dist/include"
   "${CMAKE_CURRENT_SOURCE_DIR}/../external/bp-service-framework/include"
-  "${CMAKE_CURRENT_SOURCE_DIR}/../external/bpsdk/include"
-  "${CMAKE_CURRENT_SOURCE_DIR}/../external/bp-service-tools/CppTools/src"
 )
 
 IF ("${CMAKE_BUILD_TYPE}" STREQUAL "CodeCoverage")
