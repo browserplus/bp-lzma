@@ -35,7 +35,6 @@
 #include "bputil/bpthread.h"
 #include "bputil/bpsync.h"
 #include "bp-file/bpfile.h"
-#include "bpurlutil.cpp"
 #include "easylzma/compress.h"  
 
 // When unarchive() is exposed, remove uses of this define.
@@ -78,9 +77,9 @@ struct Task {
     bplus::service::Transaction m_tran;
     bplus::service::Callback* m_cb;
     bool m_canceled;
-    std::string m_inPath;
+    boost::filesystem::path m_inPath;
     std::ifstream m_inFile;
-    std::string m_outPath;    
+    boost::filesystem::path m_outPath;    
     std::ofstream m_outFile;
 };
 
@@ -162,7 +161,7 @@ performTask(Task* t) {
         }
     }
     t->m_outFile.close();
-    t->m_tran.complete(bplus::Path(t->m_outPath));
+    t->m_tran.complete(bplus::Path(t->m_outPath.string()));
     elzma_compress_free(&hand);
 }
 
@@ -176,7 +175,7 @@ struct SessionData {
     bplus::sync::Condition cond;
     bplus::thread::Thread thread;
     bool running;
-    std::string tempDir;
+    boost::filesystem::path tempDir;
 };
 
 static void*
@@ -263,10 +262,10 @@ void
 LZMA::finalConstruct() {
     assert(m_sd == NULL);
     m_sd = new SessionData;
-    m_sd->tempDir = context("temp_dir");
+    m_sd->tempDir = boost::filesystem::path(tempDir());
     boost::filesystem::create_directory(m_sd->tempDir);
     std::stringstream ss;
-    ss << "session allocated, using temp dir: " << (m_sd->tempDir.empty() ? "<empty>" : m_sd->tempDir.c_str());
+    ss << "session allocated, using temp dir: " << (m_sd->tempDir.empty() ? "<empty>" : m_sd->tempDir.string());
     bplus::service::Service::log(BP_INFO, ss.str());
     m_sd->running = true;
     (void)m_sd->thread.run(threadFunc, (void*)m_sd);
@@ -289,21 +288,16 @@ LZMA::lzmaImpl(Task::Type t, const bplus::service::Transaction& tran, const bplu
     assert(m_sd != NULL);
     // first we'll get the input file into a string
     const bplus::Path* bpPath = dynamic_cast<const bplus::Path*>(args.value("file"));
-// NEEDSWORK!!!  Fix this when port to v5 since we don't need URI's anymore
-#if 0
-    std::string path = bpPath;
-#else // 0
-    std::string path = bp::urlutil::pathFromURL((std::string)(*bpPath));
-#endif // 0
+    boost::filesystem::path path((bplus::tPathString)*bpPath);
     if (path.empty()) {
         ss.str("");
-        ss << "can't parse file:// url: " << (std::string)(*bpPath);
+        ss << "can't parse file:// url: "; // NEEDSWORK!!  Give path
         log(BP_ERROR, ss.str());
         tran.error("bp.fileAccessError", "invalid file URI");
         return;
     }
     // generate the output path
-    boost::filesystem::path outPath = bp::file::getTempPath(m_sd->tempDir, path);
+    boost::filesystem::path outPath = bp::file::getTempPath(m_sd->tempDir, bp::file::nativeUtf8String(path));
     // append "lz"
     outPath.replace_extension(".lz");
     if (outPath.string().empty()) {
