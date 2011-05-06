@@ -161,7 +161,7 @@ performTask(Task* t) {
         }
     }
     t->m_outFile.close();
-    t->m_tran.complete(bplus::Path(t->m_outPath.string()));
+    t->m_tran.complete(bplus::Path(bp::file::nativeString(t->m_outPath)));
     elzma_compress_free(&hand);
 }
 
@@ -290,10 +290,7 @@ LZMA::lzmaImpl(Task::Type t, const bplus::service::Transaction& tran, const bplu
     const bplus::Path* bpPath = dynamic_cast<const bplus::Path*>(args.value("file"));
     boost::filesystem::path path((bplus::tPathString)*bpPath);
     if (path.empty()) {
-        ss.str("");
-        ss << "can't parse file:// url: "; // NEEDSWORK!!  Give path
-        log(BP_ERROR, ss.str());
-        tran.error("bp.fileAccessError", "invalid file URI");
+        tran.error("bp.fileAccessError", "invalid file parameter");
         return;
     }
     // generate the output path
